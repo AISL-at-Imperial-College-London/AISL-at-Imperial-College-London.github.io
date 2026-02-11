@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - AISL</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+
+<body>
+    <header class="page-header">
+        <h1 id="profile-name">Loading...</h1>
+        <p id="profile-title">Loading...</p>
+    </header>
+
+    <main>
+        <section class="content-section profile-section">
+            <!-- Main Profile Container: Image, Biography, Contact Info -->
+            <div class="profile-container">
+                <div class="profile-image">
+                    <img id="profile-image" src="../assets/images/people/placeholder.jpg" alt="Profile">
+                </div>
+                <div class="profile-bio">
+                    <h4>Biography</h4>
+                    <p id="profile-biography">Loading biography...</p>
+                </div>
+            </div>
+
+            <!--Publications-->
+            <div class="publication">
+                <h4>Publications</h4>
+                <p id="profile-publications-info">Loading publication information...</p>
+            </div>
+
+            <!-- Awards & Recognition Section (Card Layout) -->
+            <h3 id="awards-heading">Awards & Recognition</h3>
+            <div class="awards-grid" id="profile-awards">
+                <!-- Awards will be loaded dynamically -->
+            </div>
+
+            <!-- Education Section -->
+            <h3>Education</h3>
+            <div class="education-grid" id="profile-education">
+                <!-- Education will be loaded dynamically -->
+            </div>
+
+            <!-- Contact & Social Media Section -->
+            <div class="profile-info" id="profile-social">
+                <!-- Social links will be loaded dynamically -->
+            </div>
+
+            <!-- Back Link -->
+            <div class="profile-back">
+                <a href="people.html" class="btn-link">← Back to Lab Members</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="../assets/js/common.js"></script>
+    <script>
+        // CSV parser that handles quoted fields with commas
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === ',' && !insideQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // Get URL parameters
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                type: params.get('type') || 'phd',
+                id: parseInt(params.get('id')) || 1
+            };
+        }
+
+        // Load profile data
+        async function loadProfileData() {
+            try {
+                const { type, id } = getURLParams();
+
+                // Determine CSV file based on type
+                const csvFiles = {
+                    'phd': '../data/people/phds.csv',
+                    'postdoc': '../data/people/postdocs.csv',
+                    'master': '../data/people/masters.csv',
+                    'alumni': '../data/people/alumni.csv'
+                };
+
+                const csvFile = csvFiles[type];
+                if (!csvFile) {
+                    document.body.innerHTML = '<h1>Invalid profile type</h1>';
+                    return;
+                }
+
+                const response = await fetch(csvFile);
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+
+                if (lines.length <= id) {
+                    document.body.innerHTML = '<h1>Profile not found</h1>';
+                    return;
+                }
+
+                const line = lines[id].trim();
+                if (!line) {
+                    document.body.innerHTML = '<h1>No data available</h1>';
+                    return;
+                }
+
+                const parts = parseCSVLine(line);
+
+                // Parse profile data (all CSV files have the same structure)
+                const profile = {
+                    firstName: parts[0],
+                    lastName: parts[1],
+                    title: parts[2],
+                    biography: parts[3],
+                    awards: [
+                        { title: parts[4], year: parts[5] },
+                        { title: parts[6], year: parts[7] },
+                        { title: parts[8], year: parts[9] },
+                        { title: parts[10], year: parts[11] }
+                    ],
+                    bachelors: {
+                        degree: parts[12],
+                        university: parts[13],
+                        year: parts[14]
+                    },
+                    masters: {
+                        degree: parts[15],
+                        university: parts[16],
+                        year: parts[17]
+                    },
+                    phd: {
+                        university: parts[18],
+                        year: parts[19]
+                    },
+                    linkedin: parts[20],
+                    github: parts[21],
+                    website: parts[22],
+                    googleScholar: parts[23],
+                    orcid: parts[24],
+                    imagePath: parts[25]
+                };
+
+                // Update header
+                const fullName = `${profile.firstName} ${profile.lastName}`;
+                document.getElementById('profile-name').textContent = fullName;
+                document.getElementById('profile-title').textContent = profile.title;
+                document.title = `${fullName} - AISL`;
+
+                // Update image
+                if (profile.imagePath) {
+                    // If path starts with assets/, prepend ../ for relative path from pages/ folder
+                    let imagePath = profile.imagePath.startsWith('assets/') ? '../' + profile.imagePath : profile.imagePath;
+                    document.getElementById('profile-image').src = imagePath;
+                    document.getElementById('profile-image').alt = fullName;
+                } else {
+                    const imageEl = document.getElementById('profile-image');
+                    imageEl.style.display = 'none';
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'image-placeholder';
+                    placeholder.textContent = '👤';
+                    placeholder.style.fontSize = '4rem';
+                    imageEl.parentNode.insertBefore(placeholder, imageEl);
+                }
+
+                // Update biography
+                document.getElementById('profile-biography').textContent = profile.biography;
+
+                // Update publications section
+                const pubsInfo = document.getElementById('profile-publications-info');
+                let pubsHTML = 'Information on my publication records can be found through my ';
+
+                if (profile.googleScholar) {
+                    pubsHTML += `<a href="${profile.googleScholar}" target="_blank" rel="noopener noreferrer">Google Scholar</a> profile`;
+                    if (profile.orcid) {
+                        const orcidUrl = profile.orcid.startsWith('http') ? profile.orcid : `https://orcid.org/${profile.orcid}`;
+                        pubsHTML += ` or <a href="${orcidUrl}" target="_blank" rel="noopener noreferrer">ORCID</a>`;
+                    }
+                } else if (profile.orcid) {
+                    const orcidUrl = profile.orcid.startsWith('http') ? profile.orcid : `https://orcid.org/${profile.orcid}`;
+                    pubsHTML += `<a href="${orcidUrl}" target="_blank" rel="noopener noreferrer">ORCID profile</a>`;
+                } else {
+                    pubsHTML = 'Publication information coming soon.';
+                }
+                pubsHTML += '.';
+                pubsInfo.innerHTML = pubsHTML;
+
+                // Populate awards
+                const awardsContainer = document.getElementById('profile-awards');
+                awardsContainer.innerHTML = '';
+                let hasAwards = false;
+
+                profile.awards.forEach(award => {
+                    if (award.title && award.title.length > 0) {
+                        hasAwards = true;
+                        const awardDiv = document.createElement('div');
+                        awardDiv.className = 'award-item';
+                        awardDiv.innerHTML = `<h4>🏆 ${award.title}</h4><p>${award.year}</p>`;
+                        awardsContainer.appendChild(awardDiv);
+                    }
+                });
+
+                // Hide awards section if no awards
+                const awardsHeading = document.getElementById('awards-heading');
+                if (awardsHeading) {
+                    awardsHeading.style.display = hasAwards ? 'block' : 'none';
+                    awardsContainer.style.display = hasAwards ? 'grid' : 'none';
+                }
+
+                // Populate education
+                const educationContainer = document.getElementById('profile-education');
+                educationContainer.innerHTML = '';
+
+                // Bachelors
+                if (profile.bachelors.degree) {
+                    const bachelorsDiv = document.createElement('div');
+                    bachelorsDiv.className = 'education-item';
+                    bachelorsDiv.innerHTML = `
+                        <div class="education-icon">🏫</div>
+                        <h4>Bachelor in ${profile.bachelors.degree}</h4>
+                        <p class="education-field">${profile.bachelors.university}</p>
+                        <p class="education-details">${profile.bachelors.year}</p>
+                    `;
+                    educationContainer.appendChild(bachelorsDiv);
+                }
+
+                // Masters
+                if (profile.masters.degree) {
+                    const mastersDiv = document.createElement('div');
+                    mastersDiv.className = 'education-item';
+                    mastersDiv.innerHTML = `
+                        <div class="education-icon">📚</div>
+                        <h4>Master in ${profile.masters.degree}</h4>
+                        <p class="education-field">${profile.masters.university}</p>
+                        <p class="education-details">${profile.masters.year}</p>
+                    `;
+                    educationContainer.appendChild(mastersDiv);
+                }
+
+                // PhD
+                if (profile.phd.university) {
+                    const phdDiv = document.createElement('div');
+                    phdDiv.className = 'education-item';
+                    phdDiv.innerHTML = `
+                        <div class="education-icon">🎓</div>
+                        <h4>PhD</h4>
+                        <p class="education-field">${profile.phd.university}</p>
+                        <p class="education-details">${profile.phd.year}</p>
+                    `;
+                    educationContainer.appendChild(phdDiv);
+                }
+
+                // Populate social links
+                const socialContainer = document.getElementById('profile-social');
+                let socialHTML = '<div class="profile-socials"><h4>Follow</h4><div class="social-links">';
+                let hasSocial = false;
+
+                if (profile.linkedin) {
+                    hasSocial = true;
+                    socialHTML += `
+                        <a href="${profile.linkedin}" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
+                                <circle cx="4" cy="4" r="2" />
+                            </svg>
+                        </a>
+                    `;
+                }
+
+                if (profile.github) {
+                    hasSocial = true;
+                    socialHTML += `
+                        <a href="${profile.github}" target="_blank" rel="noopener noreferrer" title="GitHub">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                            </svg>
+                        </a>
+                    `;
+                }
+
+                if (profile.website) {
+                    hasSocial = true;
+                    socialHTML += `
+                        <a href="${profile.website}" target="_blank" rel="noopener noreferrer" title="Personal Website">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                            </svg>
+                        </a>
+                    `;
+                }
+
+                if (profile.googleScholar) {
+                    hasSocial = true;
+                    socialHTML += `
+                        <a href="${profile.googleScholar}" target="_blank" rel="noopener noreferrer" title="Google Scholar">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0m0 3c2 0 4 .5 5.5 1.5l-2.3 1.9c-.9-.6-2-1-3.2-1C9.4 5.4 7.5 7.3 7.5 9.6h9.8c0 .2 0 .3 0 .5 0 2.8-2.2 5-5 5-2.8 0-5-2.2-5-5 0-3 2.2-5.2 5.2-5.2zm-6 10c0 3 2.7 5.4 6 5.4 1.5 0 3-.5 4.2-1.3l2.3 1.9C16 18.6 14.2 19 12 19c-6.1 0-10.8-4.9-10.8-11 0-1.2.2-2.4.6-3.6l2.7 2.2c.1.8.1 1.6.1 2.4z" />
+                            </svg>
+                        </a>
+                    `;
+                }
+
+                if (profile.orcid) {
+                    hasSocial = true;
+                    const orcidUrl = profile.orcid.startsWith('http') ? profile.orcid : `https://orcid.org/${profile.orcid}`;
+                    socialHTML += `
+                        <a href="${orcidUrl}" target="_blank" rel="noopener noreferrer" title="ORCID">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zM7.369 8.378c.525 0 .949-.425.949-.949s-.424-.949-.949-.949-.949.425-.949.949.424.949.949.949zm2.7 9.645h-1.296V9.6h1.296v8.423zm11.307-11.307h-1.233V5.997c-.374-.374-.94-.374-1.314 0v1.719h-1.296V5.684c0-1.148.935-2.083 2.083-2.083 1.148 0 2.083.935 2.083 2.083v9.338h-1.296v-8.423z"/>
+                            </svg>
+                        </a>
+                    `;
+                }
+
+                socialHTML += '</div></div>';
+                if (hasSocial) {
+                    socialContainer.innerHTML = socialHTML;
+                } else {
+                    socialContainer.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+                document.body.innerHTML = '<h1>Error loading profile</h1>';
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            initCommonElements('people');
+            loadProfileData();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conference Papers - AISL</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+        .search-filter-section {
+            background-color: #f5f5f5;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .search-filter-section input,
+        .search-filter-section select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-filter-section input:focus,
+        .search-filter-section select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .filter-button {
+            background-color: #1e3c72;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .filter-button:hover {
+            background-color: #2a5298;
+        }
+
+        .reset-button {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .reset-button:hover {
+            background-color: #545b62;
+        }
+
+        .results-info {
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 1024px) {
+            .search-filter-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .search-filter-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="page-header">
+        <h1>Conference Papers</h1>
+        <p>All published conference papers by the lab</p>
+    </header>
+
+    <main>
+        <section class="content-section">
+            <div class="search-filter-section">
+                <input type="text" id="searchKeyword" placeholder="Search by title, authors, or keywords...">
+                <select id="filterYear">
+                    <option value="">All Years</option>
+                </select>
+                <div>
+                    <button class="filter-button" onclick="filterPapers()">Filter</button>
+                    <button class="reset-button" onclick="resetFilters()">Reset</button>
+                </div>
+            </div>
+
+            <div class="results-info">
+                <span id="resultsCount">Loading...</span>
+            </div>
+
+            <div class="publications-list" id="allConferenceList">
+                <!-- Publications will be loaded dynamically from CSV -->
+            </div>
+        </section>
+    </main>
+
+    <script src="../assets/js/common.js"></script>
+    <script src="../assets/js/publications.js"></script>
+    <script>
+        let allPapers = [];
+
+        // Load and parse conference papers
+        async function loadPapers() {
+            try {
+                const response = await fetch('../data/publications/conferences.csv');
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+
+                allPapers = [];
+                const years = new Set();
+
+                // Parse CSV (skip header)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const parts = parseCSVLine(line);
+                    if (parts.length >= 4) {
+                        const paper = {
+                            title: parts[0],
+                            authors: parts[1],
+                            conference: parts[2],
+                            year: parts[3],
+                            link: parts[4] || ''
+                        };
+                        allPapers.push(paper);
+                        years.add(paper.year);
+                    }
+                }
+
+                // Populate year filter
+                const yearSelect = document.getElementById('filterYear');
+                const yearArray = Array.from(years).sort((a, b) => b - a);
+                yearArray.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+
+                // Display all papers initially
+                displayPapers(allPapers);
+            } catch (error) {
+                console.error('Error loading papers:', error);
+                document.getElementById('allConferenceList').innerHTML = '<p>Error loading papers.</p>';
+            }
+        }
+
+        // Filter papers based on search and year
+        function filterPapers() {
+            const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+            const year = document.getElementById('filterYear').value;
+
+            const filtered = allPapers.filter(paper => {
+                const matchesKeyword = !keyword ||
+                    paper.title.toLowerCase().includes(keyword) ||
+                    paper.authors.toLowerCase().includes(keyword) ||
+                    paper.conference.toLowerCase().includes(keyword);
+
+                const matchesYear = !year || paper.year === year;
+
+                return matchesKeyword && matchesYear;
+            });
+
+            displayPapers(filtered);
+        }
+
+        // Display papers
+        function displayPapers(papers) {
+            const list = document.getElementById('allConferenceList');
+            const count = document.getElementById('resultsCount');
+
+            if (papers.length === 0) {
+                list.innerHTML = '<p>No papers found matching your criteria.</p>';
+                count.textContent = 'No results';
+                return;
+            }
+
+            list.innerHTML = '';
+            papers.forEach(paper => {
+                const paper_el = document.createElement('article');
+                paper_el.className = 'publication-item';
+                let linkHTML = '';
+                if (paper.link) {
+                    linkHTML = `<a href="${paper.link}" target="_blank" rel="noopener noreferrer" class="publication-link">Read More →</a>`;
+                }
+                paper_el.innerHTML = `
+                    <h3>${paper.title}</h3>
+                    <p class="publication-authors">${paper.authors}</p>
+                    <p class="publication-journal"><strong>${paper.conference}</strong>, ${paper.year}</p>
+                    ${linkHTML}
+                `;
+                list.appendChild(paper_el);
+            });
+
+            count.textContent = `Showing ${papers.length} paper${papers.length !== 1 ? 's' : ''}`;
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            document.getElementById('searchKeyword').value = '';
+            document.getElementById('filterYear').value = '';
+            displayPapers(allPapers);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPapers();
+
+            // Allow filtering on Enter key
+            document.getElementById('searchKeyword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') filterPapers();
+            });
+        });
+    </script>
+</body>
+
+</html>

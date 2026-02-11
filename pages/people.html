@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People - AISL</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+
+<body>
+    <header class="page-header">
+        <h1>Lab Members</h1>
+        <p>Meet our team</p>
+    </header>
+
+    <main>
+        <section class="content-section">
+            <h2>Principal Investigator</h2>
+            <div class="people-grid">
+                <div class="person-card">
+                    <div class="person-avatar"><img src="../assets/images/people/mehmet.jpg" alt="Dr. Mehmet Mercangöz">
+                    </div>
+                    <h3>Dr. Mehmet Mercangöz</h3>
+                    <p class="person-role">Principal Investigator</p>
+                    <a href="mehmet_mercangoz.html" class="publication-link">More about me→</a>
+                </div>
+            </div>
+
+            <h2 id="postdocs-title" style="display: none;">Post Docs</h2>
+            <div class="people-grid" id="postdocs-grid">
+                <!-- PostDocs will be loaded dynamically from CSV -->
+            </div>
+
+            <h2 id="phd-title" style="display: none;">PhD Students</h2>
+            <div class="people-grid" id="phd-students-grid">
+                <!-- PhD students will be loaded dynamically from CSV -->
+            </div>
+
+            <h2 id="masters-title" style="display: none;">Master Students</h2>
+            <div class="people-grid" id="masters-grid">
+                <!-- Master students will be loaded dynamically from CSV -->
+            </div>
+
+            <h2 id="alumni-title" style="display: none;">Alumni</h2>
+            <div class="people-grid" id="alumni-grid">
+                <!-- Alumni will be loaded dynamically from CSV -->
+            </div>
+        </section>
+    </main>
+
+    <script src="../assets/js/common.js"></script>
+    <script src="../assets/js/people.js"></script>
+</body>
+
+</html>
