@@ -42,7 +42,7 @@ function generateNavbar(activePage = '') {
             <div class="nav-container">
                 <a href="${basePath}index.html" class="nav-logo">
                     <img src="${basePath}assets/images/logos/logo_1.png?v=2" alt="AISL Logo" class="logo-image">
-                    <img src="${basePath}assets/images/logos/Imperial_dep.png" alt="Chemical Engineering Logo" class="logo-image">
+                    <img src="${basePath}assets/images/logos/imperial_dep.png" alt="Chemical Engineering Logo" class="logo-image">
                 </a>
                 <ul class="nav-menu">
                     <li><a href="${basePath}index.html" class="nav-link ${activePage === 'home' ? 'active' : ''}">Home</a></li>
