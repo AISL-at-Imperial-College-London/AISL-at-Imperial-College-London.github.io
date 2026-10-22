@@ -121,16 +121,16 @@ async function loadPostDocs() {
     }
 }
 
-// Load Master Students from CSV
-async function loadMasterStudents() {
+// Load a student group (undergraduates, visitors) from CSV
+async function loadStudentGroup(csvFile, gridId, titleId, role, type, label) {
     try {
-        const response = await fetch('../data/people/masters.csv');
+        const response = await fetch(csvFile);
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
 
         if (lines.length <= 1) return; // Only header, no data
 
-        const grid = document.getElementById('masters-grid');
+        const grid = document.getElementById(gridId);
         grid.innerHTML = '';
         let hasEntries = false;
 
@@ -145,7 +145,7 @@ async function loadMasterStudents() {
             if (!parts[0] || parts[0].length === 0) continue;
 
             hasEntries = true;
-            const master = {
+            const student = {
                 firstName: parts[0],
                 lastName: parts[1],
                 title: parts[2],
@@ -156,28 +156,28 @@ async function loadMasterStudents() {
             const card = document.createElement('div');
             card.className = 'person-card';
             let avatarHTML = '';
-            if (master.imagePath && master.imagePath.trim()) {
+            if (student.imagePath && student.imagePath.trim()) {
                 // If path starts with assets/, prepend ../ for relative path from pages/ folder
-                let imagePath = master.imagePath.startsWith('assets/') ? '../' + master.imagePath : master.imagePath;
-                avatarHTML = `<div class="person-avatar"><img src="${imagePath}" alt="${master.firstName} ${master.lastName}"></div>`;
+                let imagePath = student.imagePath.startsWith('assets/') ? '../' + student.imagePath : student.imagePath;
+                avatarHTML = `<div class="person-avatar"><img src="${imagePath}" alt="${student.firstName} ${student.lastName}"></div>`;
             } else {
                 avatarHTML = `<div class="person-avatar"><div class="image-placeholder">👤</div></div>`;
             }
             card.innerHTML = `
                 ${avatarHTML}
-                <h3>${master.firstName} ${master.lastName}</h3>
-                <p class="person-role">Master Student</p>
-                <p class="person-bio">${master.title}</p>
-                <a href="profile.html?type=master&id=${i}" class="publication-link">More about me →</a>
+                <h3>${student.firstName} ${student.lastName}</h3>
+                <p class="person-role">${role}</p>
+                <p class="person-bio">${student.title}</p>
+                <a href="profile.html?type=${type}&id=${i}" class="publication-link">More about me →</a>
             `;
             grid.appendChild(card);
         }
 
         // Hide title if no entries
-        const masterTitle = document.getElementById('masters-title');
-        if (masterTitle) masterTitle.style.display = hasEntries ? 'block' : 'none';
+        const title = document.getElementById(titleId);
+        if (title) title.style.display = hasEntries ? 'block' : 'none';
     } catch (error) {
-        console.error('Error loading Master Students:', error);
+        console.error(`Error loading ${label}:`, error);
     }
 }
 
@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommonElements('people');
     loadPhDStudents();
     loadPostDocs();
-    loadMasterStudents();
+    loadStudentGroup('../data/people/visitors.csv', 'visiting-grid', 'visiting-title', 'Visiting Student', 'visitor', 'Visiting Students');
+    loadStudentGroup('../data/people/undergraduates.csv', 'undergraduates-grid', 'undergraduates-title', 'Undergraduate Student', 'undergraduate', 'Undergraduate Students');
     loadAlumni();
 });
